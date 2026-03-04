@@ -1,0 +1,17 @@
+# Scam Shield - Dependencies
+# Machine Learning Based Scam Detection Using Multi-Modal Content Analysis
+
+# Web Framework
+Flask==3.0.0
+
+# Google Generative AI (Gemini)
+google-generativeai==0.8.3
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Production Server (optional)
+gunicorn==21.2.0
+
+# For Windows (optional, if using waitress instead of gunicorn)
+waitress==2.1.2

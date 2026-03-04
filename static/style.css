@@ -1,0 +1,338 @@
+/* 
+ * Scam Shield - Custom Styles
+ * ML Based Scam Detection Using Multi-Modal Content Analysis
+ */
+
+/* Root Variables */
+:root {
+    --primary-color: #0d6efd;
+    --danger-color: #dc3545;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --light-bg: #f8f9fa;
+    --transition-speed: 0.3s;
+}
+
+/* Global Styles */
+body {
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Card Styles */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+/* Button Styles */
+.btn {
+    border-radius: 8px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 500;
+    transition: all var(--transition-speed);
+}
+
+.btn-lg {
+    padding: 0.8rem 2rem;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+/* Content Type Button Group */
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+.btn-group .btn:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Upload Area */
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    background-color: #fafafa;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.upload-area.drag-over {
+    border-color: var(--primary-color);
+    background-color: rgba(13, 110, 253, 0.1);
+    transform: scale(1.01);
+}
+
+.upload-placeholder {
+    color: #6c757d;
+}
+
+.upload-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+}
+
+/* Input Sections Animation */
+.input-section {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Results Card */
+#resultsCard {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Prediction Badge */
+.prediction-badge {
+    display: inline-block;
+    padding: 1.5rem 3rem;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.prediction-badge.scam {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    color: var(--danger-color);
+    border: 2px solid var(--danger-color);
+}
+
+.prediction-badge.legitimate {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: var(--success-color);
+    border: 2px solid var(--success-color);
+}
+
+.prediction-badge.unknown {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #d97706;
+    border: 2px solid var(--warning-color);
+}
+
+/* Progress Bar */
+.progress {
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    transition: width 0.8s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.alert-secondary {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Toast Styles */
+.toast {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Spinner */
+.spinner-border {
+    animation-duration: 1s;
+}
+
+/* Tips Card */
+.card.bg-light {
+    border-radius: 12px;
+}
+
+.card.bg-light ul li {
+    padding: 0.25rem 0;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-size: 1.4rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0;
+    }
+    
+    .btn-group .btn:first-child {
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .btn-group .btn:last-child {
+        border-radius: 0 0 8px 8px;
+    }
+    
+    .prediction-badge {
+        padding: 1rem 2rem;
+    }
+    
+    .display-5 {
+        font-size: 1.8rem;
+    }
+}
+
+/* Animations for icons */
+.bi-shield-check, .bi-shield-lock {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* Loading Animation Enhancement */
+.spinner-border[role="status"] {
+    animation: spinner-border 0.75s linear infinite, pulse 1.5s ease-in-out infinite;
+}
+
+/* Hover Effects for Tips */
+.card.bg-light ul li {
+    transition: transform var(--transition-speed);
+}
+
+.card.bg-light ul li:hover {
+    transform: translateX(5px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Selection Color */
+::selection {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Focus Visible for Accessibility */
+.btn:focus-visible,
+.form-control:focus-visible {
+    outline: 3px solid rgba(13, 110, 253, 0.5);
+    outline-offset: 2px;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    /* Optional: Add dark mode styles here if needed */
+}
