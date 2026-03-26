@@ -7,6 +7,7 @@ import os
 import base64
 import json
 import re
+from urllib.parse import urlparse
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -25,11 +26,55 @@ if GEMINI_API_KEY:
 
 # Allowed image extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_TEXT_LENGTH = 10000
+MAX_URL_LENGTH = 2048
+
+
+def error_response(reason, status_code=400):
+    """Return a normalized JSON error response."""
+    return jsonify({
+        'prediction': 'Error',
+        'confidence': 0,
+        'reason': reason,
+        'suspicious_parts': []
+    }), status_code
 
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def normalize_url(url):
+    """Validate URL and normalize scheme when missing."""
+    cleaned = url.strip()
+    if not cleaned:
+        return None
+
+    if len(cleaned) > MAX_URL_LENGTH:
+        return None
+
+    if not re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', cleaned):
+        cleaned = f'https://{cleaned}'
+
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        return None
+
+    return cleaned
+
+
+def detect_image_format(image_bytes):
+    """Detect image type from file signature (magic bytes)."""
+    if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'png'
+    if image_bytes.startswith(b'\xff\xd8\xff'):
+        return 'jpeg'
+    if image_bytes.startswith((b'GIF87a', b'GIF89a')):
+        return 'gif'
+    if image_bytes.startswith(b'RIFF') and image_bytes[8:12] == b'WEBP':
+        return 'webp'
+    return None
 
 
 def create_scam_detection_prompt(content_type, content):
@@ -40,8 +85,16 @@ IMPORTANT: You must respond ONLY with a valid JSON object in this exact format:
 {
     "prediction": "Scam" or "Legitimate",
     "confidence": <number between 0 and 1>,
-    "reason": "<brief explanation in 1-2 sentences>"
+    "reason": "<brief explanation in 1-2 sentences>",
+    "suspicious_parts": ["<specific suspicious phrase/pattern>", "..."]
 }
+
+Rules for suspicious_parts:
+- Include 2-6 concise strings when prediction is "Scam".
+- For text, quote exact suspicious words/phrases from the message when possible.
+- For URL, include suspicious URL patterns (e.g., typo-domain, odd path, misleading subdomain).
+- For image, include visual cues (e.g., fake logo, urgent threat text, payment demand).
+- If prediction is "Legitimate", return an empty list.
 
 Analysis criteria for SCAM detection:
 - Urgency or pressure tactics ("Act now!", "Limited time!")
@@ -118,11 +171,22 @@ def parse_gemini_response(response_text):
             confidence = max(0, min(1, confidence))  # Clamp between 0 and 1
             
             reason = result.get('reason', 'No explanation provided')
+            suspicious_parts = result.get('suspicious_parts', [])
+
+            if not isinstance(suspicious_parts, list):
+                suspicious_parts = []
+
+            normalized_parts = [
+                str(part).strip()
+                for part in suspicious_parts
+                if isinstance(part, (str, int, float)) and str(part).strip()
+            ][:6]
             
             return {
                 'prediction': prediction,
                 'confidence': round(confidence, 2),
-                'reason': reason
+                'reason': reason,
+                'suspicious_parts': normalized_parts
             }
     except (json.JSONDecodeError, ValueError, AttributeError):
         pass
@@ -133,19 +197,22 @@ def parse_gemini_response(response_text):
         return {
             'prediction': 'Scam',
             'confidence': 0.7,
-            'reason': 'Analysis suggests potential scam indicators present.'
+            'reason': 'Analysis suggests potential scam indicators present.',
+            'suspicious_parts': ['Potential phishing or fraud language detected.']
         }
     elif 'legitimate' in response_lower or 'safe' in response_lower or 'genuine' in response_lower:
         return {
             'prediction': 'Legitimate',
             'confidence': 0.7,
-            'reason': 'Analysis suggests content appears legitimate.'
+            'reason': 'Analysis suggests content appears legitimate.',
+            'suspicious_parts': []
         }
     
     return {
         'prediction': 'Unknown',
         'confidence': 0.5,
-        'reason': 'Unable to determine with certainty. Please review manually.'
+        'reason': 'Unable to determine with certainty. Please review manually.',
+        'suspicious_parts': []
     }
 
 
@@ -155,7 +222,8 @@ def analyze_with_gemini(content_type, content, image_data=None):
         return {
             'prediction': 'Error',
             'confidence': 0,
-            'reason': 'Gemini API key not configured. Please set GEMINI_API_KEY in .env file.'
+            'reason': 'Gemini API key not configured. Please set GEMINI_API_KEY in .env file.',
+            'suspicious_parts': []
         }
     
     try:
@@ -183,14 +251,16 @@ def analyze_with_gemini(content_type, content, image_data=None):
             return {
                 'prediction': 'Error',
                 'confidence': 0,
-                'reason': 'No response received from Gemini API.'
+                'reason': 'No response received from Gemini API.',
+                'suspicious_parts': []
             }
             
     except Exception as e:
         return {
             'prediction': 'Error',
             'confidence': 0,
-            'reason': f'API Error: {str(e)}'
+            'reason': f'API Error: {str(e)}',
+            'suspicious_parts': []
         }
 
 
@@ -209,63 +279,54 @@ def predict():
         if content_type == 'text':
             content = request.form.get('content', '').strip()
             if not content:
-                return jsonify({
-                    'prediction': 'Error',
-                    'confidence': 0,
-                    'reason': 'No text content provided.'
-                }), 400
+                return error_response('No text content provided.')
+
+            if len(content) > MAX_TEXT_LENGTH:
+                return error_response(f'Text is too long. Maximum allowed is {MAX_TEXT_LENGTH} characters.')
+
             result = analyze_with_gemini('text', content)
             
         elif content_type == 'url':
             url = request.form.get('content', '').strip()
             if not url:
-                return jsonify({
-                    'prediction': 'Error',
-                    'confidence': 0,
-                    'reason': 'No URL provided.'
-                }), 400
-            # Basic URL validation
-            if not url.startswith(('http://', 'https://')):
-                url = 'https://' + url
-            result = analyze_with_gemini('url', url)
+                return error_response('No URL provided.')
+
+            normalized_url = normalize_url(url)
+            if not normalized_url:
+                return error_response('Please provide a valid URL (example: https://example.com).')
+
+            result = analyze_with_gemini('url', normalized_url)
             
         elif content_type == 'image':
             if 'image' not in request.files:
-                return jsonify({
-                    'prediction': 'Error',
-                    'confidence': 0,
-                    'reason': 'No image file provided.'
-                }), 400
+                return error_response('No image file provided.')
             
             file = request.files['image']
             if file.filename == '':
-                return jsonify({
-                    'prediction': 'Error',
-                    'confidence': 0,
-                    'reason': 'No image file selected.'
-                }), 400
+                return error_response('No image file selected.')
             
             if not allowed_file(file.filename):
-                return jsonify({
-                    'prediction': 'Error',
-                    'confidence': 0,
-                    'reason': 'Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP'
-                }), 400
+                return error_response('Invalid file extension. Allowed: PNG, JPG, JPEG, GIF, WEBP')
             
             # Read and encode image as base64
             image_bytes = file.read()
+            if not image_bytes:
+                return error_response('Uploaded file is empty.')
+
+            detected_format = detect_image_format(image_bytes)
+            if not detected_format:
+                return error_response('Invalid image data. Upload a valid PNG, JPEG, GIF, or WEBP file.')
+
             image_base64 = base64.b64encode(image_bytes).decode('utf-8')
             
             # Determine MIME type
-            extension = file.filename.rsplit('.', 1)[1].lower()
             mime_types = {
                 'png': 'image/png',
-                'jpg': 'image/jpeg',
                 'jpeg': 'image/jpeg',
                 'gif': 'image/gif',
                 'webp': 'image/webp'
             }
-            mime_type = mime_types.get(extension, 'image/jpeg')
+            mime_type = mime_types.get(detected_format, 'image/jpeg')
             
             image_data = {
                 'base64': image_base64,
@@ -275,20 +336,13 @@ def predict():
             result = analyze_with_gemini('image', '', image_data)
             
         else:
-            return jsonify({
-                'prediction': 'Error',
-                'confidence': 0,
-                'reason': 'Invalid content type specified.'
-            }), 400
+            return error_response('Invalid content type specified.')
         
         return jsonify(result)
         
     except Exception as e:
-        return jsonify({
-            'prediction': 'Error',
-            'confidence': 0,
-            'reason': f'Server error: {str(e)}'
-        }), 500
+        app.logger.exception('Unhandled error in /predict: %s', e)
+        return error_response('Unexpected server error occurred. Please try again.', 500)
 
 
 @app.route('/health')
@@ -296,7 +350,8 @@ def health():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'api_configured': bool(GEMINI_API_KEY)
+        'api_configured': bool(GEMINI_API_KEY),
+        'model': GEMINI_MODEL
     })
 
 

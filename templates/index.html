@@ -8,6 +8,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
 </head>
@@ -19,8 +23,6 @@
                 <i class="bi bi-shield-check me-2 fs-4"></i>
                 <span class="fw-bold">Scam Shield</span>
             </a>
-            <span class="navbar-text text-light">
-            </span>
         </div>
     </nav>
 
@@ -40,8 +42,8 @@
         </div>
 
         <!-- Input Form Card -->
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-6">
                 <div class="card shadow-lg border-0">
                     <div class="card-header bg-primary text-white py-3">
                         <h5 class="mb-0">
@@ -79,8 +81,17 @@
                                 class="form-control" 
                                 id="textContent" 
                                 rows="5" 
+                                maxlength="10000"
                                 placeholder="Paste the suspicious message here...&#10;&#10;Example: Congratulations! You've won $1,000,000! Click here to claim your prize immediately..."
                             ></textarea>
+                            <div class="d-flex justify-content-between mt-2 align-items-center">
+                                <small class="text-secondary">Press Ctrl+Enter to analyze quickly</small>
+                                <small class="text-muted"><span id="textCharCount">0</span>/10000</small>
+                            </div>
+                            <div class="example-row mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary example-btn" data-target="text" data-value="Congratulations! You won a prize. Share your OTP now to claim it.">Scam example</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary example-btn" data-target="text" data-value="Your electricity bill for March has been generated. Please pay via the official customer portal.">Legit example</button>
+                            </div>
                         </div>
 
                         <!-- URL Input Section -->
@@ -95,6 +106,9 @@
                                 placeholder="https://example.com or suspicious-site.com"
                             >
                             <div class="form-text">Enter the full URL including http:// or https://</div>
+                            <div class="example-row mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary example-btn" data-target="url" data-value="secure-login-verification-alert.com/account">Try URL example</button>
+                            </div>
                         </div>
 
                         <!-- Image Input Section -->
@@ -132,16 +146,25 @@
                     </div>
                 </div>
 
+            </div>
+
+            <div class="col-lg-6">
                 <!-- Results Card -->
-                <div id="resultsCard" class="card shadow-lg border-0 mt-4 d-none">
+                <div id="resultsCard" class="card shadow-lg border-0 results-panel">
                     <div class="card-header py-3" id="resultsHeader">
                         <h5 class="mb-0 text-white">
                             <i class="bi bi-clipboard-data me-2"></i>Analysis Results
                         </h5>
                     </div>
                     <div class="card-body p-4">
+                        <div id="resultsEmptyState" class="results-empty-state text-center py-5">
+                            <i class="bi bi-shield-check fs-1 text-muted"></i>
+                            <p class="mt-3 mb-1 fw-semibold">Results will appear here</p>
+                            <small class="text-muted">Enter content on the left and click Analyze with AI</small>
+                        </div>
+
                         <!-- Loading Spinner -->
-                        <div id="loadingSpinner" class="text-center py-5">
+                        <div id="loadingSpinner" class="text-center py-5 d-none">
                             <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                                 <span class="visually-hidden">Analyzing...</span>
                             </div>
@@ -183,30 +206,13 @@
                                 </label>
                                 <div id="reasonText" class="alert alert-secondary mb-0"></div>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Tips Section -->
-                <div class="card border-0 bg-light mt-4">
-                    <div class="card-body">
-                        <h6 class="fw-bold text-primary mb-3">
-                            <i class="bi bi-info-circle me-2"></i>Tips to Stay Safe
-                        </h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <ul class="list-unstyled mb-0">
-                                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Never share personal info via SMS/email</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Verify sender before clicking links</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Look for spelling/grammar errors</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <ul class="list-unstyled mb-0">
-                                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Be wary of urgent requests</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Check URLs carefully for typos</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>When in doubt, contact official sources</li>
-                                </ul>
+                            <!-- Suspicious Parts -->
+                            <div class="mb-0" id="suspiciousPartsSection">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-flag me-1"></i>Suspicious Parts Detected
+                                </label>
+                                <div id="suspiciousPartsList" class="suspicious-parts-list"></div>
                             </div>
                         </div>
                     </div>
@@ -214,15 +220,6 @@
             </div>
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container text-center">
-            <p class="mb-1">
-                <i class="bi bi-shield-check me-2"></i>Scam Shield - ML Based Scam Detection System
-            </p>
-        </div>
-    </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -245,6 +242,21 @@
             const uploadPreview = document.getElementById('uploadPreview');
             const previewImage = document.getElementById('previewImage');
             const clearImageBtn = document.getElementById('clearImage');
+            const resultsEmptyState = document.getElementById('resultsEmptyState');
+            const textContent = document.getElementById('textContent');
+            const textCharCount = document.getElementById('textCharCount');
+            const urlContent = document.getElementById('urlContent');
+
+            initializeExamples();
+            updateTextCount();
+            resetResultsPanel();
+
+            textContent.addEventListener('input', updateTextCount);
+            textContent.addEventListener('keydown', (event) => {
+                if (event.ctrlKey && event.key === 'Enter') {
+                    analyzeBtn.click();
+                }
+            });
 
             // Switch content type sections
             contentTypeRadios.forEach(radio => {
@@ -263,8 +275,8 @@
                         imageSection.classList.remove('d-none');
                     }
 
-                    // Hide results when switching
-                    resultsCard.classList.add('d-none');
+                    // Reset results when switching
+                    resetResultsPanel();
                 });
             });
 
@@ -294,6 +306,18 @@
             function handleImageSelect() {
                 const file = imageInput.files[0];
                 if (file) {
+                    if (!file.type.startsWith('image/')) {
+                        showError('Selected file is not an image.');
+                        clearSelectedImage();
+                        return;
+                    }
+
+                    if (file.size > 16 * 1024 * 1024) {
+                        showError('Image exceeds 16MB size limit.');
+                        clearSelectedImage();
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         previewImage.src = e.target.result;
@@ -306,10 +330,7 @@
 
             clearImageBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                imageInput.value = '';
-                previewImage.src = '';
-                uploadPlaceholder.classList.remove('d-none');
-                uploadPreview.classList.add('d-none');
+                clearSelectedImage();
             });
 
             // Analyze button click handler
@@ -320,19 +341,32 @@
 
                 // Validate and get content based on type
                 if (contentType === 'text') {
-                    const content = document.getElementById('textContent').value.trim();
+                    const content = textContent.value.trim();
                     if (!content) {
                         showError('Please enter text content to analyze.');
                         return;
                     }
+
+                    if (content.length > 10000) {
+                        showError('Text exceeds 10,000 characters.');
+                        return;
+                    }
+
                     formData.append('content', content);
                 } else if (contentType === 'url') {
-                    const url = document.getElementById('urlContent').value.trim();
+                    const url = urlContent.value.trim();
                     if (!url) {
                         showError('Please enter a URL to analyze.');
                         return;
                     }
-                    formData.append('content', url);
+
+                    const normalizedUrl = normalizeUrl(url);
+                    if (!normalizedUrl) {
+                        showError('Please enter a valid URL.');
+                        return;
+                    }
+
+                    formData.append('content', normalizedUrl);
                 } else if (contentType === 'image') {
                     const file = imageInput.files[0];
                     if (!file) {
@@ -343,7 +377,7 @@
                 }
 
                 // Show loading state
-                resultsCard.classList.remove('d-none');
+                resultsEmptyState.classList.add('d-none');
                 loadingSpinner.classList.remove('d-none');
                 resultsContent.classList.add('d-none');
                 analyzeBtn.disabled = true;
@@ -356,6 +390,13 @@
                     });
 
                     const data = await response.json();
+
+                    if (!response.ok && (!data.prediction || data.prediction !== 'Error')) {
+                        data.prediction = 'Error';
+                        data.confidence = 0;
+                        data.reason = data.reason || 'Server rejected the request.';
+                    }
+
                     displayResults(data);
                 } catch (error) {
                     displayResults({
@@ -371,6 +412,7 @@
 
             function displayResults(data) {
                 loadingSpinner.classList.add('d-none');
+                resultsEmptyState.classList.add('d-none');
                 resultsContent.classList.remove('d-none');
 
                 const predictionBadge = document.getElementById('predictionBadge');
@@ -380,6 +422,8 @@
                 const confidenceBar = document.getElementById('confidenceBar');
                 const confidenceText = document.getElementById('confidenceText');
                 const reasonText = document.getElementById('reasonText');
+                const suspiciousPartsSection = document.getElementById('suspiciousPartsSection');
+                const suspiciousPartsList = document.getElementById('suspiciousPartsList');
 
                 // Set prediction styling
                 if (data.prediction === 'Scam') {
@@ -402,7 +446,8 @@
                 predictionText.textContent = data.prediction;
 
                 // Animate confidence bar
-                const confidencePercent = Math.round(data.confidence * 100);
+                const confidenceValue = Number.isFinite(data.confidence) ? data.confidence : 0;
+                const confidencePercent = Math.round(Math.max(0, Math.min(1, confidenceValue)) * 100);
                 confidenceBar.style.width = '0%';
                 setTimeout(() => {
                     confidenceBar.style.width = confidencePercent + '%';
@@ -411,8 +456,20 @@
 
                 reasonText.textContent = data.reason;
 
-                // Scroll to results
-                resultsCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const suspiciousParts = Array.isArray(data.suspicious_parts)
+                    ? data.suspicious_parts.filter((item) => String(item).trim().length > 0)
+                    : [];
+
+                if (data.prediction === 'Scam' && suspiciousParts.length > 0) {
+                    suspiciousPartsSection.classList.remove('d-none');
+                    suspiciousPartsList.innerHTML = suspiciousParts
+                        .map((part) => `<span class="suspicious-chip">${escapeHtml(String(part))}</span>`)
+                        .join('');
+                } else {
+                    suspiciousPartsSection.classList.add('d-none');
+                    suspiciousPartsList.innerHTML = '';
+                }
+
             }
 
             function showError(message) {
@@ -430,9 +487,86 @@
                     </div>
                 `;
                 document.body.insertAdjacentHTML('beforeend', toastHtml);
+                const toastContainer = document.body.lastElementChild;
                 setTimeout(() => {
-                    document.querySelector('.toast-container').remove();
+                    if (toastContainer && toastContainer.parentNode) {
+                        toastContainer.remove();
+                    }
                 }, 3000);
+            }
+
+            function clearSelectedImage() {
+                imageInput.value = '';
+                previewImage.src = '';
+                uploadPlaceholder.classList.remove('d-none');
+                uploadPreview.classList.add('d-none');
+            }
+
+            function normalizeUrl(url) {
+                const trimmed = url.trim();
+                if (!trimmed) return null;
+
+                const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+                try {
+                    const parsed = new URL(withScheme);
+                    if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname) {
+                        return null;
+                    }
+                    return parsed.href;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function initializeExamples() {
+                const exampleButtons = document.querySelectorAll('.example-btn');
+                exampleButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const target = button.dataset.target;
+                        const value = button.dataset.value;
+
+                        if (target === 'text') {
+                            document.getElementById('typeText').checked = true;
+                            textSection.classList.remove('d-none');
+                            urlSection.classList.add('d-none');
+                            imageSection.classList.add('d-none');
+                            textContent.value = value;
+                            updateTextCount();
+                            textContent.focus();
+                        }
+
+                        if (target === 'url') {
+                            document.getElementById('typeUrl').checked = true;
+                            textSection.classList.add('d-none');
+                            urlSection.classList.remove('d-none');
+                            imageSection.classList.add('d-none');
+                            urlContent.value = value;
+                            urlContent.focus();
+                        }
+
+                        resetResultsPanel();
+                    });
+                });
+            }
+
+            function updateTextCount() {
+                textCharCount.textContent = textContent.value.length;
+            }
+
+            function escapeHtml(value) {
+                return value
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#39;');
+            }
+
+            function resetResultsPanel() {
+                loadingSpinner.classList.add('d-none');
+                resultsContent.classList.add('d-none');
+                resultsEmptyState.classList.remove('d-none');
             }
         });
     </script>
